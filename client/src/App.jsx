@@ -1,7 +1,7 @@
 import React from 'react'
 import { Toaster } from 'react-hot-toast'
 import Home from './pages/Home'
-import Login from './pages/login'
+import Login from './pages/Login'
 import { Route, Routes } from 'react-router-dom'
 
 const App = () => {
