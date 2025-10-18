@@ -6,20 +6,31 @@ const generateTaskId = async (userId) => {
     const day = String(now.getDate()).padStart(2, '0');
     const year = now.getFullYear();
     
-    // Get the start and end of today for the user's timezone
-    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+    // Create the date prefix (DD-YYYY)
+    const datePrefix = `${day}-${year}`;
     
-    // Count tasks created today by this user
-    const todayTasksCount = await Task.countDocuments({
+    // Find all tasks with this date prefix for this user
+    // Using regex to match taskIds that start with the date prefix
+    const existingTasks = await Task.find({
         user: userId,
-        createdAt: { $gte: startOfDay, $lte: endOfDay }
+        taskId: { $regex: `^${datePrefix}-` }
+    }).select('taskId').lean();
+    
+    // Extract the numbers from existing taskIds and find the highest
+    let maxNumber = 0;
+    existingTasks.forEach(task => {
+        // Extract the number part after the last hyphen
+        const parts = task.taskId.split('-');
+        const number = parseInt(parts[parts.length - 1], 10);
+        if (number > maxNumber) {
+            maxNumber = number;
+        }
     });
     
-    // Increment and format the task number
-    const taskNumber = String(todayTasksCount + 1).padStart(3, '0');
+    // Increment by 1 to get the next available number
+    const taskNumber = String(maxNumber + 1).padStart(3, '0');
     
-    return `${day}-${year}-${taskNumber}`;
+    return `${datePrefix}-${taskNumber}`;
 };
 
 export const createTask = async (req, res) => {
@@ -30,17 +41,42 @@ export const createTask = async (req, res) => {
             return res.status(400).json({ success: false, message: "Title, description, and deadline are required" });
         }
 
-        // Generate unique taskId
-        const taskId = await generateTaskId(req.user._id);
+        // Retry logic to handle potential duplicate taskId (race condition)
+        let attempts = 0;
+        const maxAttempts = 5;
+        let newTask = null;
 
-        const newTask = await Task.create({
-            taskId,
-            title,
-            description,
-            deadline,
-            user: req.user._id,
-            status: "pending"
-        });
+        while (attempts < maxAttempts) {
+            try {
+                // Generate unique taskId
+                const taskId = await generateTaskId(req.user._id);
+
+                newTask = await Task.create({
+                    taskId,
+                    title,
+                    description,
+                    deadline,
+                    user: req.user._id,
+                    status: "pending"
+                });
+
+                // If successful, break the loop
+                break;
+            } catch (err) {
+                // Check if error is due to duplicate taskId
+                if (err.code === 11000 && err.keyPattern?.taskId) {
+                    attempts++;
+                    if (attempts >= maxAttempts) {
+                        throw new Error("Failed to generate unique task ID after multiple attempts");
+                    }
+                    // Wait a small amount before retrying
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                } else {
+                    // If it's a different error, throw it
+                    throw err;
+                }
+            }
+        }
 
         res.status(201).json({ success: true, task: newTask, message: "Task created successfully" });
     } catch (error) {
