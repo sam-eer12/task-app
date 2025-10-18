@@ -1,5 +1,27 @@
 import Task from "../models/task.js";
 
+// Helper function to generate taskId in format DD-YYYY-NNN
+const generateTaskId = async (userId) => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const year = now.getFullYear();
+    
+    // Get the start and end of today for the user's timezone
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+    
+    // Count tasks created today by this user
+    const todayTasksCount = await Task.countDocuments({
+        user: userId,
+        createdAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+    
+    // Increment and format the task number
+    const taskNumber = String(todayTasksCount + 1).padStart(3, '0');
+    
+    return `${day}-${year}-${taskNumber}`;
+};
+
 export const createTask = async (req, res) => {
     try {
         const { title, description, deadline } = req.body;
@@ -8,7 +30,11 @@ export const createTask = async (req, res) => {
             return res.status(400).json({ success: false, message: "Title, description, and deadline are required" });
         }
 
+        // Generate unique taskId
+        const taskId = await generateTaskId(req.user._id);
+
         const newTask = await Task.create({
+            taskId,
             title,
             description,
             deadline,

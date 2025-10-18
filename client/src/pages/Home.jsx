@@ -12,6 +12,7 @@ const Home = () => {
   const [showModal, setShowModal] = useState(false)
   const [newTask, setNewTask] = useState({ title: '', description: '', deadline: '' })
   const [filter, setFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (!authUser) {
@@ -81,9 +82,21 @@ const Home = () => {
     navigate('/login')
   }
 
-  const filteredTasks = filter === 'all' 
+  // Filter by status
+  const statusFilteredTasks = filter === 'all' 
     ? tasks 
     : tasks.filter(task => task.status === filter)
+  
+  // Filter by search query (taskId, title, or description)
+  const filteredTasks = statusFilteredTasks.filter(task => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      task.taskId?.toLowerCase().includes(query) ||
+      task.title.toLowerCase().includes(query) ||
+      task.description.toLowerCase().includes(query)
+    )
+  })
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -118,6 +131,37 @@ const Home = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by Task ID, title, or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white shadow-sm"
+            />
+            <svg 
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Action Bar */}
         <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
           <div className="flex gap-2">
@@ -180,7 +224,7 @@ const Home = () => {
               
               return (
               <div key={task._id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition">
-                <div className="flex justify-between items-start mb-3">
+                <div className="flex justify-between items-start mb-2">
                   <h3 className="text-lg font-semibold text-gray-800 flex-1">{task.title}</h3>
                   <button
                     onClick={() => handleDeleteTask(task._id)}
@@ -190,6 +234,15 @@ const Home = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
+                </div>
+                {/* Task ID Badge */}
+                <div className="mb-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-mono font-semibold">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                    </svg>
+                    {task.taskId}
+                  </span>
                 </div>
                 <p className="text-gray-600 mb-4 line-clamp-3">{task.description}</p>
                 

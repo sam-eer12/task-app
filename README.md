@@ -6,6 +6,13 @@ A full-stack task management application built with React, Node.js, Express, and
 
 - **User Authentication**: Secure signup and login with JWT tokens
 - **Task Management**: Create, read, update, and delete tasks with deadlines
+- **Unique Task IDs**: Each task gets a unique ID in format DD-YYYY-NNN (e.g., 18-2025-001)
+  - Date-based numbering resets daily
+  - Easy reference and tracking
+- **Search Functionality**: Powerful search bar to find tasks by:
+  - Task ID
+  - Title
+  - Description
 - **Task Status Tracking**: Track tasks through three states:
   - Pending
   - In Progress
