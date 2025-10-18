@@ -4,6 +4,7 @@ import cors from 'cors';
 import http from 'http';
 import { connectDB } from './lib/db.js';
 import userRouter from './routes/userRouter.js';
+import taskRouter from './routes/taskRouter.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -13,6 +14,7 @@ app.use(cors());
 
 
 app.use('/api/auth', userRouter);
+app.use('/api/tasks', taskRouter);
 
 app.use('/', (req, res) => res.send("Hello from Server"));
 await connectDB();
