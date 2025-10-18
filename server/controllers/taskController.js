@@ -41,46 +41,27 @@ export const createTask = async (req, res) => {
             return res.status(400).json({ success: false, message: "Title, description, and deadline are required" });
         }
 
-        // Retry logic to handle potential duplicate taskId (race condition)
-        let attempts = 0;
-        const maxAttempts = 5;
-        let newTask = null;
+        // Generate unique taskId
+        const taskId = await generateTaskId(req.user._id);
 
-        while (attempts < maxAttempts) {
-            try {
-                // Generate unique taskId
-                const taskId = await generateTaskId(req.user._id);
-
-                newTask = await Task.create({
-                    taskId,
-                    title,
-                    description,
-                    deadline,
-                    user: req.user._id,
-                    status: "pending"
-                });
-
-                // If successful, break the loop
-                break;
-            } catch (err) {
-                // Check if error is due to duplicate taskId
-                if (err.code === 11000 && err.keyPattern?.taskId) {
-                    attempts++;
-                    if (attempts >= maxAttempts) {
-                        throw new Error("Failed to generate unique task ID after multiple attempts");
-                    }
-                    // Wait a small amount before retrying
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                } else {
-                    // If it's a different error, throw it
-                    throw err;
-                }
-            }
-        }
+        const newTask = await Task.create({
+            taskId,
+            title,
+            description,
+            deadline,
+            user: req.user._id,
+            status: "pending"
+        });
 
         res.status(201).json({ success: true, task: newTask, message: "Task created successfully" });
     } catch (error) {
         console.log("Error creating task:", error.message);
+        
+        // If duplicate key error on taskId, provide more specific error
+        if (error.code === 11000 && error.keyPattern?.taskId) {
+            return res.status(409).json({ success: false, message: "Task ID conflict. Please try again." });
+        }
+        
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };

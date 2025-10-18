@@ -13,6 +13,7 @@ const Home = () => {
   const [newTask, setNewTask] = useState({ title: '', description: '', deadline: '' })
   const [filter, setFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (!authUser) {
@@ -38,7 +39,12 @@ const Home = () => {
 
   const handleCreateTask = async (e) => {
     e.preventDefault()
+    
+    // Prevent double submission
+    if (isSubmitting) return
+    
     try {
+      setIsSubmitting(true)
       const { data } = await axios.post('/api/tasks', newTask)
       if (data.success) {
         setTasks([data.task, ...tasks])
@@ -48,6 +54,8 @@ const Home = () => {
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Failed to create task')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -393,9 +401,14 @@ const Home = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  disabled={isSubmitting}
+                  className={`flex-1 px-4 py-3 rounded-lg transition font-medium ${
+                    isSubmitting 
+                      ? 'bg-indigo-400 cursor-not-allowed' 
+                      : 'bg-indigo-600 hover:bg-indigo-700'
+                  } text-white`}
                 >
-                  Create Task
+                  {isSubmitting ? 'Creating...' : 'Create Task'}
                 </button>
               </div>
             </form>
