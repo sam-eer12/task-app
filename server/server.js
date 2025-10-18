@@ -11,8 +11,10 @@ const server = http.createServer(app);
 app.use(express.json());
 app.use(cors());
 
-app.use('/', (req, res) => res.send("Hello from Server"));
+
 app.use('/api/auth', userRouter);
+
+app.use('/', (req, res) => res.send("Hello from Server"));
 await connectDB();
 
 const PORT = process.env.PORT || 5000;
