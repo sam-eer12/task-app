@@ -3,7 +3,7 @@ import axios from "axios";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
-import { io } from "socket.io-client";
+
 
 
 
@@ -17,8 +17,7 @@ export const AuthProvider = ({children}) => {
     const [token, setToken] = useState(localStorage.getItem("token") || null);
     const [authUser, setAuthUser] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
-    const [socket, setSocket] = useState(null);
-
+    
     const checkAuth = async ()=>{
         try {
             const {data} = await axios.get("/api/auth/check")
@@ -60,33 +59,11 @@ export const AuthProvider = ({children}) => {
         setOnlineUsers([]);
         axios.defaults.headers.common["token"] = null;
         toast.success("Logged out successfully");
-        socket.disconnect();
+       
     }
 
-    const updateProfile = async (body)=>{
-        try {
-            const {data} = await axios.put("/api/auth/updateProfile",body);
-            if (data.success) {
-                setAuthUser(data.user);
-                toast.success(data.message);
-            }
-        } catch (error) {
-            toast.error(error?.response?.data?.message || error.message || "Profile update failed");
-        }
-    }
-
-    const connectSocket = (userData)=>{
-        if(!userData || socket?.connected) return;
-        const newSocket = io(backendUrl, {
-            query: {userId: userData._id}
-        });
-        newSocket.connect();
-        setSocket(newSocket);
-
-        newSocket.on("getOnlineUsers", (userIds)=>{
-            setOnlineUsers(userIds);
-        })
-    }
+   
+    
 
     useEffect(()=>{
         if(token){
@@ -97,10 +74,10 @@ export const AuthProvider = ({children}) => {
     const value = {
         axios,
         authUser,
-        onlineUsers,socket,
+        onlineUsers,
         login,
         logout,
-        updateProfile
+        
     }
 
     return <AuthContext.Provider value={value}>
