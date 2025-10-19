@@ -1,13 +1,14 @@
 import Task from "../models/task.js";
 
-// Helper function to generate taskId in format DD-YYYY-NNN
+// Helper function to generate taskId in format DDMMYYYY-NNN
 const generateTaskId = async (userId) => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
     
-    // Create the date prefix (DD-YYYY)
-    const datePrefix = `${day}-${year}`;
+    // Create the date prefix (DDMMYYYY)
+    const datePrefix = `${day}${month}${year}`;
     
     // Find all tasks with this date prefix for this user
     // Using regex to match taskIds that start with the date prefix
